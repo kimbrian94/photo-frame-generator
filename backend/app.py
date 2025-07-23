@@ -10,10 +10,10 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 SLOTS = [
-    (17, 17, 266, 178),    # Slot 1
-    (17, 214, 266, 178),   # Slot 2
-    (17, 410, 266, 178),   # Slot 3
-    (17, 604, 266, 178),  # Slot 4
+    (35, 35, 530, 355),    # Slot 1
+    (35, 429, 530, 355),   # Slot 2
+    (35, 821, 530, 355),   # Slot 3
+    (35, 1208, 530, 355),  # Slot 4
 ]
 
 def convert_to_srgb(img):
@@ -182,26 +182,48 @@ def save_locally():
         
     file = request.files['file']
     
+    # Get optional tag name from form data
+    tag_name = request.form.get('tagName', '').strip()
+    
     # Create a directory for saving generated images if it doesn't exist
     save_dir = os.path.join(os.path.dirname(__file__), 'generated_frames')
     os.makedirs(save_dir, exist_ok=True)
     
     # Generate a unique filename with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"frame_{timestamp}.png"
-    filepath = os.path.join(save_dir, filename)
     
-    # Save the image locally with high quality and 300 DPI
+    # Open the uploaded image
     img = convert_to_srgb(Image.open(file))
-    img.save(
-        filepath, 
+    
+    # Create a doubled version (side by side)
+    width, height = img.size
+    doubled_width = width * 2
+    doubled_img = Image.new(img.mode, (doubled_width, height))
+    
+    # Paste the original image twice, side by side
+    doubled_img.paste(img, (0, 0))           # Left side
+    doubled_img.paste(img, (width, 0))       # Right side
+    
+    # Create filename with tag name if provided
+    if tag_name:
+        doubled_filename = f"{tag_name}_{timestamp}_doubled.png"
+    else:
+        doubled_filename = f"frame_{timestamp}_doubled.png"
+        
+    doubled_filepath = os.path.join(save_dir, doubled_filename)
+    doubled_img.save(
+        doubled_filepath, 
         format='PNG', 
         compress_level=0,  # No compression for maximum quality
         dpi=(300, 300)     # Explicitly set 300 DPI
     )
     
-    print(f"Saved generated frame to: {filepath}")
-    return jsonify({'success': True, 'filepath': filepath})
+    print(f"Saved doubled frame to: {doubled_filepath}")
+    
+    return jsonify({
+        'success': True, 
+        'filepath': doubled_filepath
+    })
 
 # --- Proxy upload endpoint for gofile.io sharing ---
 @app.route('/upload_temp', methods=['POST'])

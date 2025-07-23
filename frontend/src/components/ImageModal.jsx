@@ -11,6 +11,7 @@ const ImageModal = ({ open, onClose, imageUrl }) => {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [localPath, setLocalPath] = useState("");
+  const [tagName, setTagName] = useState("");
   const qrCanvasRef = useRef(null);
   
   useEffect(() => {
@@ -135,6 +136,11 @@ const ImageModal = ({ open, onClose, imageUrl }) => {
       const formData = new FormData();
       formData.append("file", file);
       
+      // Add tag name if provided
+      if (tagName.trim()) {
+        formData.append("tagName", tagName.trim());
+      }
+      
       // Send to our save_locally endpoint
       const res = await fetch("http://localhost:5001/save_locally", {
         method: "POST",
@@ -238,8 +244,21 @@ const ImageModal = ({ open, onClose, imageUrl }) => {
                         </p>
                       )}
                       
-                      {/* Save locally button */}
+                      {/* Save locally section with tag name */}
                       <div className="mt-4">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1" style={{ fontFamily: "'Poppins', system-ui" }}>
+                          Optional tag for saved file:
+                        </p>
+                        <div className="mb-2">
+                          <input
+                            type="text"
+                            value={tagName}
+                            onChange={(e) => setTagName(e.target.value)}
+                            placeholder="Enter tag (optional)"
+                            className="w-full px-3 py-2 text-sm bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md mb-2"
+                            style={{ fontFamily: "'Poppins', system-ui" }}
+                          />
+                        </div>
                         <button
                           onClick={saveLocally}
                           disabled={saving}

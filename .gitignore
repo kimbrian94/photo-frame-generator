@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.log
+*.sqlite3
+*.db
+.env
+venv/
+ENV/
+.env.*
+
+# Jupyter
+.ipynb_checkpoints
+
+# Node
+node_modules/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# VSCode
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Output
+frontend/build/
+frontend/dist/
+backend/generated_frames/
+
+# Misc
+*.bak
+*.tmp
+*.swp
+*.swo
+
+# Ignore test images
+/test-images/

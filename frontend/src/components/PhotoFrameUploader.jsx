@@ -325,9 +325,9 @@ const PhotoFrameUploader = () => {
             transition={{ delay: 0.4 }}
             className="w-full md:w-[450px] flex flex-col"
           >
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-4 h-full flex flex-col">
-              <h2 className="text-lg font-bold mb-4" style={{ fontFamily: "'Poppins', system-ui" }}>Preview</h2>
-              <div className="flex-grow flex items-center justify-center relative p-0 m-0" style={{height: 'calc(100% - 3rem)'}}>
+            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg h-full flex flex-col">
+              <h2 className="text-lg font-bold mb-4 px-4 pt-4" style={{ fontFamily: "'Poppins', system-ui" }}>Preview</h2>
+              <div className="flex-grow flex flex-col items-center justify-start relative p-0 m-0" style={{height: 'calc(100% - 3rem)'}}>
                 {loading ? (
                   <div className="absolute inset-0 bg-slate-700/30 backdrop-blur-sm flex items-center justify-center z-10">
                     <div className="flex flex-col items-center">
@@ -336,12 +336,12 @@ const PhotoFrameUploader = () => {
                     </div>
                   </div>
                 ) : previewUrl ? (
-                  <div className="w-full h-full flex items-center justify-center">
+                  <div className="w-full flex flex-col items-center pt-4">
                     <img 
                       src={previewUrl} 
                       alt="Preview" 
                       className="object-contain"
-                      style={{ maxWidth: '90%', maxHeight: '90%' }}
+                      style={{ maxWidth: '80%', maxHeight: '80%' }}
                     />
                   </div>
                 ) : (

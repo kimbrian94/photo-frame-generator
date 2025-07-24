@@ -218,16 +218,19 @@ const ImageModal = ({ open, onClose, imageUrl }) => {
                     <p className="text-sm text-slate-600 dark:text-slate-300 font-medium mb-2" style={{ fontFamily: "'Poppins', system-ui" }}>Save locally:</p>
                     <div className="mb-3">
                       <p className="text-xs text-slate-500 dark:text-slate-400 mb-1" style={{ fontFamily: "'Poppins', system-ui" }}>
-                        Optional tag for saved file:
+                        Optional tag (saves in a folder with this name):
                       </p>
                       <input
                         type="text"
                         value={tagName}
                         onChange={(e) => setTagName(e.target.value)}
-                        placeholder="Enter tag (optional)"
+                        placeholder="Enter tag for folder organization"
                         className="w-full px-3 py-2 text-sm bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md"
                         style={{ fontFamily: "'Poppins', system-ui" }}
                       />
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1" style={{ fontFamily: "'Poppins', system-ui" }}>
+                        Files will be saved in /resources/generated_photos/[tag_name]
+                      </p>
                     </div>
                     
                     <div className="mb-3">
@@ -274,9 +277,14 @@ const ImageModal = ({ open, onClose, imageUrl }) => {
                       )}
                     </button>
                     {saved && localPath && (
-                      <p className="text-xs text-green-600 dark:text-green-400 mt-1 break-all" style={{ fontFamily: "'Poppins', system-ui" }}>
-                        Saved to: {localPath}
-                      </p>
+                      <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 rounded-md border border-green-200 dark:border-green-900">
+                        <p className="text-xs text-green-700 dark:text-green-400 font-medium" style={{ fontFamily: "'Poppins', system-ui" }}>
+                          Successfully saved!
+                        </p>
+                        <p className="text-xs text-green-600 dark:text-green-500 mt-1 break-all font-mono" style={{ fontFamily: "'Poppins', system-ui" }}>
+                          Path: {localPath}
+                        </p>
+                      </div>
                     )}
                   </div>
 

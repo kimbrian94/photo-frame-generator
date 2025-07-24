@@ -36,6 +36,8 @@ Thumbs.db
 frontend/build/
 frontend/dist/
 backend/generated_frames/
+backend/resources/generated_photos/**/*.png
+backend/resources/generated_photos/*.png
 
 # Misc
 *.bak

@@ -216,19 +216,31 @@ def save_locally():
     for i in range(copy_count):
         multi_img.paste(img, (width * i, 0))
     
-    # Create filename with tag name and copy count if provided
+    # If tag name is provided, create a subdirectory with that name
     if tag_name:
+        # Create tag-specific subdirectory
+        tag_dir = os.path.join(save_dir, tag_name)
+        os.makedirs(tag_dir, exist_ok=True)
+        
+        # Use tag directory as save directory
+        file_save_dir = tag_dir
+        
+        # Create filename with tag name and copy count
         if copy_count > 1:
             multi_filename = f"{tag_name}_{timestamp}_{copy_count}x.png"
         else:
             multi_filename = f"{tag_name}_{timestamp}.png"
     else:
+        # Use the main generated_photos directory
+        file_save_dir = save_dir
+        
+        # Create filename without tag name
         if copy_count > 1:
             multi_filename = f"frame_{timestamp}_{copy_count}x.png"
         else:
             multi_filename = f"frame_{timestamp}.png"
         
-    multi_filepath = os.path.join(save_dir, multi_filename)
+    multi_filepath = os.path.join(file_save_dir, multi_filename)
     multi_img.save(
         multi_filepath, 
         format='PNG', 
@@ -238,9 +250,15 @@ def save_locally():
     
     print(f"Saved {copy_count}x frame to: {multi_filepath}")
     
+    # Return a more user-friendly relative path for display
+    display_path = os.path.join('resources', 'generated_photos')
+    if tag_name:
+        display_path = os.path.join(display_path, tag_name)
+    display_path = os.path.join(display_path, multi_filename)
+    
     return jsonify({
         'success': True, 
-        'filepath': multi_filepath,
+        'filepath': display_path,
         'copyCount': copy_count
     })
 

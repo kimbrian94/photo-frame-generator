@@ -12,6 +12,7 @@ const ImageModal = ({ open, onClose, imageUrl }) => {
   const [saved, setSaved] = useState(false);
   const [localPath, setLocalPath] = useState("");
   const [tagName, setTagName] = useState("");
+  const [copyCount, setCopyCount] = useState(2); // Default to 2 copies side by side
   const qrCanvasRef = useRef(null);
   
   useEffect(() => {
@@ -141,6 +142,9 @@ const ImageModal = ({ open, onClose, imageUrl }) => {
         formData.append("tagName", tagName.trim());
       }
       
+      // Add number of copies to be placed side by side
+      formData.append("copyCount", copyCount.toString());
+      
       // Send to our save_locally endpoint
       const res = await fetch("http://localhost:5001/save_locally", {
         method: "POST",
@@ -205,10 +209,79 @@ const ImageModal = ({ open, onClose, imageUrl }) => {
                   </div>
                 )}
               </div>
-              {/* QR code + share right */}
+              {/* Right panel for actions */}
               <div className="w-full max-w-sm flex flex-col justify-center items-center p-6 border-l border-slate-200 dark:border-slate-700">
                 <h3 className="text-2xl font-extrabold mb-4 text-center bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent" style={{ fontFamily: "'Poppins', system-ui", letterSpacing: '-0.05em' }}>youngnakism</h3>
                 <div className="flex flex-col items-center gap-6 w-full">
+                  {/* Save locally section with tag name - Always visible */}
+                  <div className="w-full border-b border-slate-200 dark:border-slate-700 pb-6">
+                    <p className="text-sm text-slate-600 dark:text-slate-300 font-medium mb-2" style={{ fontFamily: "'Poppins', system-ui" }}>Save locally:</p>
+                    <div className="mb-3">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-1" style={{ fontFamily: "'Poppins', system-ui" }}>
+                        Optional tag for saved file:
+                      </p>
+                      <input
+                        type="text"
+                        value={tagName}
+                        onChange={(e) => setTagName(e.target.value)}
+                        placeholder="Enter tag (optional)"
+                        className="w-full px-3 py-2 text-sm bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md"
+                        style={{ fontFamily: "'Poppins', system-ui" }}
+                      />
+                    </div>
+                    
+                    <div className="mb-3">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mb-1" style={{ fontFamily: "'Poppins', system-ui" }}>
+                        Number of copies side by side:
+                      </p>
+                      <select
+                        value={copyCount}
+                        onChange={(e) => setCopyCount(parseInt(e.target.value))}
+                        className="w-full px-3 py-2 text-sm bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md"
+                        style={{ fontFamily: "'Poppins', system-ui" }}
+                      >
+                        <option value={1}>1 copy</option>
+                        <option value={2}>2 copies</option>
+                        <option value={3}>3 copies</option>
+                        <option value={4}>4 copies</option>
+                        <option value={5}>5 copies</option>
+                      </select>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1" style={{ fontFamily: "'Poppins', system-ui" }}>
+                        {copyCount > 1 ? `${copyCount} copies will be attached side by side` : "Single copy"}
+                      </p>
+                    </div>
+                    
+                    <button
+                      onClick={saveLocally}
+                      disabled={saving}
+                      className={`w-full py-2 rounded-md flex items-center justify-center ${
+                        saved ? "bg-green-500 hover:bg-green-600" : "bg-blue-500 hover:bg-blue-600"
+                      } text-white transition-all`}
+                      style={{ fontFamily: "'Poppins', system-ui" }}
+                    >
+                      {saving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : saved ? (
+                        <>
+                          <Check className="w-4 h-4 mr-2" />
+                          Saved!
+                        </>
+                      ) : (
+                        "Save Image Locally"
+                      )}
+                    </button>
+                    {saved && localPath && (
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-1 break-all" style={{ fontFamily: "'Poppins', system-ui" }}>
+                        Saved to: {localPath}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* QR code section */}
+                  <p className="text-sm text-slate-600 dark:text-slate-300 font-medium self-start" style={{ fontFamily: "'Poppins', system-ui" }}>Share online:</p>
                   <div className="flex-shrink-0 w-44 h-44 flex items-center justify-center">
                     {uploading ? (
                       <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-700 rounded-lg">
@@ -243,53 +316,10 @@ const ImageModal = ({ open, onClose, imageUrl }) => {
                           Copied to clipboard!
                         </p>
                       )}
-                      
-                      {/* Save locally section with tag name */}
-                      <div className="mt-4">
-                        <p className="text-xs text-slate-500 dark:text-slate-400 mb-1" style={{ fontFamily: "'Poppins', system-ui" }}>
-                          Optional tag for saved file:
-                        </p>
-                        <div className="mb-2">
-                          <input
-                            type="text"
-                            value={tagName}
-                            onChange={(e) => setTagName(e.target.value)}
-                            placeholder="Enter tag (optional)"
-                            className="w-full px-3 py-2 text-sm bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-md mb-2"
-                            style={{ fontFamily: "'Poppins', system-ui" }}
-                          />
-                        </div>
-                        <button
-                          onClick={saveLocally}
-                          disabled={saving}
-                          className={`w-full py-2 rounded-md flex items-center justify-center ${
-                            saved ? "bg-green-500 hover:bg-green-600" : "bg-blue-500 hover:bg-blue-600"
-                          } text-white transition-all`}
-                          style={{ fontFamily: "'Poppins', system-ui" }}
-                        >
-                          {saving ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Saving...
-                            </>
-                          ) : saved ? (
-                            <>
-                              <Check className="w-4 h-4 mr-2" />
-                              Saved!
-                            </>
-                          ) : (
-                            "Save Image Locally"
-                          )}
-                        </button>
-                        {saved && localPath && (
-                          <p className="text-xs text-green-600 dark:text-green-400 mt-1 break-all" style={{ fontFamily: "'Poppins', system-ui" }}>
-                            Saved to: {localPath}
-                          </p>
-                        )}
-                      </div>
                     </div>
                   )}
-                  <div className="flex flex-row gap-2 w-full justify-center">
+                  {/* Download and close buttons - Always visible */}
+                  <div className="flex flex-row gap-2 w-full justify-center mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                     <button
                       onClick={downloadImage}
                       className="flex items-center justify-center gap-2 bg-violet-500 hover:bg-violet-600 text-white p-2 px-4 rounded-md font-semibold"

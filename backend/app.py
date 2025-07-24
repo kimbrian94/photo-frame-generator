@@ -16,6 +16,10 @@ SLOTS = [
     (35, 1208, 530, 355),  # Slot 4
 ]
 
+# --- Constants for resource directories ---
+FRAME_TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), 'resources', 'frame_templates')
+GENERATED_PHOTO_DIR = os.path.join(os.path.dirname(__file__), 'resources', 'generated_photos')
+
 def convert_to_srgb(img):
     """
     Enhanced color profile management with fallbacks and better error handling.
@@ -185,8 +189,16 @@ def save_locally():
     # Get optional tag name from form data
     tag_name = request.form.get('tagName', '').strip()
     
+    # Get number of copies to place side by side (default to 2 if not specified)
+    try:
+        copy_count = int(request.form.get('copyCount', '2'))
+        # Ensure copy_count is between 1 and 5
+        copy_count = max(1, min(5, copy_count))
+    except ValueError:
+        copy_count = 2  # Default to 2 copies if invalid value
+    
     # Create a directory for saving generated images if it doesn't exist
-    save_dir = os.path.join(os.path.dirname(__file__), 'generated_frames')
+    save_dir = os.path.join(os.path.dirname(__file__), 'resources', 'generated_photos')
     os.makedirs(save_dir, exist_ok=True)
     
     # Generate a unique filename with timestamp
@@ -195,34 +207,41 @@ def save_locally():
     # Open the uploaded image
     img = convert_to_srgb(Image.open(file))
     
-    # Create a doubled version (side by side)
+    # Create a multi-copy version (side by side)
     width, height = img.size
-    doubled_width = width * 2
-    doubled_img = Image.new(img.mode, (doubled_width, height))
+    multi_width = width * copy_count
+    multi_img = Image.new(img.mode, (multi_width, height))
     
-    # Paste the original image twice, side by side
-    doubled_img.paste(img, (0, 0))           # Left side
-    doubled_img.paste(img, (width, 0))       # Right side
+    # Paste the original image multiple times, side by side
+    for i in range(copy_count):
+        multi_img.paste(img, (width * i, 0))
     
-    # Create filename with tag name if provided
+    # Create filename with tag name and copy count if provided
     if tag_name:
-        doubled_filename = f"{tag_name}_{timestamp}_doubled.png"
+        if copy_count > 1:
+            multi_filename = f"{tag_name}_{timestamp}_{copy_count}x.png"
+        else:
+            multi_filename = f"{tag_name}_{timestamp}.png"
     else:
-        doubled_filename = f"frame_{timestamp}_doubled.png"
+        if copy_count > 1:
+            multi_filename = f"frame_{timestamp}_{copy_count}x.png"
+        else:
+            multi_filename = f"frame_{timestamp}.png"
         
-    doubled_filepath = os.path.join(save_dir, doubled_filename)
-    doubled_img.save(
-        doubled_filepath, 
+    multi_filepath = os.path.join(save_dir, multi_filename)
+    multi_img.save(
+        multi_filepath, 
         format='PNG', 
         compress_level=0,  # No compression for maximum quality
         dpi=(300, 300)     # Explicitly set 300 DPI
     )
     
-    print(f"Saved doubled frame to: {doubled_filepath}")
+    print(f"Saved {copy_count}x frame to: {multi_filepath}")
     
     return jsonify({
         'success': True, 
-        'filepath': doubled_filepath
+        'filepath': multi_filepath,
+        'copyCount': copy_count
     })
 
 # --- Proxy upload endpoint for gofile.io sharing ---
@@ -257,6 +276,49 @@ def upload_temp():
     except Exception as e:
         print(f"Exception during upload to gofile.io: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/get_templates', methods=['GET'])
+def get_templates():
+    """
+    Get all available frame templates from the frame_templates directory
+    """
+    print("Received /get_templates GET request")
+    
+    # Make sure directory exists
+    os.makedirs(FRAME_TEMPLATE_DIR, exist_ok=True)
+    
+    # Get all image files in the directory
+    templates = []
+    allowed_extensions = {'.png', '.jpg', '.jpeg', '.gif'}
+    
+    try:
+        for filename in os.listdir(FRAME_TEMPLATE_DIR):
+            # Check if file is an image
+            ext = os.path.splitext(filename)[1].lower()
+            if ext in allowed_extensions:
+                filepath = os.path.join(FRAME_TEMPLATE_DIR, filename)
+                # Get basic file info
+                templates.append({
+                    'filename': filename,
+                    'path': f"/templates/{filename}",  # Frontend will use this path
+                    'size': os.path.getsize(filepath)
+                })
+    except Exception as e:
+        print(f"Error listing templates: {e}")
+        return jsonify({'error': str(e)}), 500
+    
+    return jsonify({
+        'success': True,
+        'templates': templates
+    })
+
+# Endpoint to serve template images
+@app.route('/templates/<filename>', methods=['GET'])
+def serve_template(filename):
+    """
+    Serve a template image file
+    """
+    return send_file(os.path.join(FRAME_TEMPLATE_DIR, filename), mimetype='image/*')
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

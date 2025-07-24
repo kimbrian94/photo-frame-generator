@@ -5,7 +5,7 @@ import { useDropzone } from 'react-dropzone';
 import ImageModal from './ImageModal';
 
 const PhotoFrameUploader = () => {
-  const [templates, setTemplates] = useState([]); // {file, url}
+  const [templates, setTemplates] = useState([]); // {filename, path}
   const [photos, setPhotos] = useState([]); // {file, url}
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [selectedPhotos, setSelectedPhotos] = useState([]); // [{file, url}]
@@ -14,6 +14,30 @@ const PhotoFrameUploader = () => {
   const [loading, setLoading] = useState(false);
   const [resultUrl, setResultUrl] = useState(null);
   const [photoRatios, setPhotoRatios] = useState({});
+
+  // Fetch available templates from backend
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const response = await fetch('http://localhost:5001/get_templates');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.templates) {
+            setTemplates(data.templates.map(template => ({
+              ...template,
+              url: `http://localhost:5001${template.path}`
+            })));
+          }
+        } else {
+          console.error('Failed to fetch templates');
+        }
+      } catch (error) {
+        console.error('Error fetching templates:', error);
+      }
+    };
+    
+    fetchTemplates();
+  }, []);
 
   // Update preview on template or photo selection change
   useEffect(() => {
@@ -25,7 +49,18 @@ const PhotoFrameUploader = () => {
       
       setLoading(true);
       const formData = new FormData();
-      formData.append('template', selectedTemplate.file);
+      
+      // For templates, we need to fetch the image first as it's a URL
+      try {
+        const templateResponse = await fetch(selectedTemplate.url);
+        const templateBlob = await templateResponse.blob();
+        const templateFile = new File([templateBlob], selectedTemplate.filename, { type: templateBlob.type });
+        formData.append('template', templateFile);
+      } catch (error) {
+        console.error('Error fetching template file:', error);
+        setLoading(false);
+        return;
+      }
       
       // Always send 4 slots, fill with null if not selected
       for (let i = 0; i < 4; i++) {
@@ -55,12 +90,8 @@ const PhotoFrameUploader = () => {
     updatePreview();
   }, [selectedTemplate, selectedPhotos]);
 
-  // Template drop handler
-  const handleTemplateDrop = acceptedFiles => {
-    const newTemplates = acceptedFiles.map(file => ({ file, url: URL.createObjectURL(file) }));
-    setTemplates(prev => [...prev, ...newTemplates]);
-  };
-
+  // No template drop handler needed as templates are static
+  
   // Photo drop handler
   const handlePhotoDrop = acceptedFiles => {
     const newPhotos = acceptedFiles.map(file => ({ file, url: URL.createObjectURL(file) }));
@@ -89,7 +120,7 @@ const PhotoFrameUploader = () => {
 
   // Clear all
   const handleClear = () => {
-    setTemplates([]);
+    // setTemplates([]);
     setPhotos([]);
     setSelectedTemplate(null);
     setSelectedPhotos([]);
@@ -104,7 +135,19 @@ const PhotoFrameUploader = () => {
     if (!selectedTemplate || selectedPhotos.length !== 4) return;
     setLoading(true);
     const formData = new FormData();
-    formData.append('template', selectedTemplate.file);
+    
+    // For templates, we need to fetch the image first as it's a URL
+    try {
+      const templateResponse = await fetch(selectedTemplate.url);
+      const templateBlob = await templateResponse.blob();
+      const templateFile = new File([templateBlob], selectedTemplate.filename, { type: templateBlob.type });
+      formData.append('template', templateFile);
+    } catch (error) {
+      console.error('Error fetching template file:', error);
+      setLoading(false);
+      return;
+    }
+    
     selectedPhotos.forEach((photoObj, idx) => {
       formData.append(`photo${idx+1}`, photoObj.file);
     });
@@ -123,12 +166,7 @@ const PhotoFrameUploader = () => {
     }
   };
 
-  // Template Dropzone
-  const { getRootProps: getTemplateRootProps, getInputProps: getTemplateInputProps } = useDropzone({
-    onDrop: handleTemplateDrop,
-    accept: { 'image/*': [] },
-    multiple: true
-  });
+  // No Template Dropzone needed as templates are static
 
   // Photo Dropzone
   const { getRootProps: getPhotoRootProps, getInputProps: getPhotoInputProps } = useDropzone({
@@ -188,16 +226,10 @@ const PhotoFrameUploader = () => {
           >
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6 h-full">
               <h2 className="text-lg font-bold mb-4" style={{ fontFamily: "'Poppins', system-ui" }}>Templates</h2>
-              {/* ...existing code... */}
               {/* Template dropzone, gallery, selected preview */}
-              {/* ...existing code... */}
-              <div {...getTemplateRootProps({ className: "flex flex-col items-center border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-lg p-4 mb-4 bg-slate-50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer" })}>
-                <input {...getTemplateInputProps()} />
-                <Upload className="w-8 h-8 text-slate-500 dark:text-slate-400 mb-2" />
-                <p className="text-sm text-center text-slate-500 dark:text-slate-400" style={{ fontFamily: "'Poppins', system-ui" }}>
-                  Drag & drop or click to select templates
-                </p>
-              </div>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4" style={{ fontFamily: "'Poppins', system-ui" }}>
+                Select a template to use
+              </p>
               <div className="grid grid-cols-2 gap-4 mt-4">
                 {templates.map((template, idx) => {
                   const isSelected = selectedTemplate && selectedTemplate.url === template.url;
@@ -211,21 +243,10 @@ const PhotoFrameUploader = () => {
                     >
                       <img 
                         src={template.url} 
-                        alt={`Template ${idx}`}
+                        alt={template.filename}
                         className="w-full h-32 object-cover"
                       />
-                      <div 
-                        className="absolute top-1 right-1 bg-black/40 hover:bg-black/60 text-white w-5 h-5 rounded flex items-center justify-center opacity-70 hover:opacity-100 transition-all"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setTemplates(prev => prev.filter(t => t.url !== template.url));
-                          if (selectedTemplate && selectedTemplate.url === template.url) {
-                            setSelectedTemplate(null);
-                          }
-                        }}
-                      >
-                        <X className="w-3 h-3" />
-                      </div>
+                      {/* No remove button for static templates */}
                       {isSelected && (
                         <div className="absolute top-2 left-2 bg-violet-500 text-white w-6 h-6 rounded-full flex items-center justify-center">
                           <Check className="w-4 h-4" />

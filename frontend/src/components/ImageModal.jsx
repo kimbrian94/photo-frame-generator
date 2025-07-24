@@ -213,8 +213,49 @@ const ImageModal = ({ open, onClose, imageUrl }) => {
               <div className="w-full max-w-sm flex flex-col justify-center items-center p-6 border-l border-slate-200 dark:border-slate-700">
                 <h3 className="text-2xl font-extrabold mb-4 text-center bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 bg-clip-text text-transparent" style={{ fontFamily: "'Poppins', system-ui", letterSpacing: '-0.05em' }}>youngnakism</h3>
                 <div className="flex flex-col items-center gap-6 w-full">
-                  {/* Save locally section with tag name - Always visible */}
+                  {/* QR code section */}
                   <div className="w-full border-b border-slate-200 dark:border-slate-700 pb-6">
+                    <p className="text-sm text-slate-600 dark:text-slate-300 font-medium self-start mb-2" style={{ fontFamily: "'Poppins', system-ui" }}>Share online:</p>
+                    <div className="flex-shrink-0 w-44 h-44 flex items-center justify-center mx-auto">
+                      {uploading ? (
+                        <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-700 rounded-lg">
+                          <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
+                        </div>
+                      ) : uploadError ? (
+                        <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-700 rounded-lg p-4 text-center">
+                          <p className="text-sm text-red-500" style={{ fontFamily: "'Poppins', system-ui" }}>{uploadError}</p>
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-white rounded-lg shadow-sm flex items-center justify-center">
+                          <canvas ref={qrCanvasRef} width="180" height="180" className="w-full h-full max-w-[180px] max-h-[180px]" />
+                        </div>
+                      )}
+                    </div>
+                    {qrUrl && (
+                      <div className="w-full mt-4">
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-1 font-medium" style={{ fontFamily: "'Poppins', system-ui" }}>Share link:</p>
+                        <div className="flex">
+                          <div className="bg-slate-100 dark:bg-slate-700 p-2 px-3 rounded-l-md flex-grow text-sm truncate">
+                            {qrUrl}
+                          </div>
+                          <button 
+                            onClick={copyToClipboard}
+                            className="bg-violet-500 hover:bg-violet-600 text-white p-2 rounded-r-md flex items-center"
+                          >
+                            {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+                          </button>
+                        </div>
+                        {copied && (
+                          <p className="text-xs text-green-600 dark:text-green-400 mt-1" style={{ fontFamily: "'Poppins', system-ui" }}>
+                            Copied to clipboard!
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Save locally section with tag name - Always visible */}
+                  <div className="w-full">
                     <p className="text-sm text-slate-600 dark:text-slate-300 font-medium mb-2" style={{ fontFamily: "'Poppins', system-ui" }}>Save locally:</p>
                     <div className="mb-3">
                       <p className="text-xs text-slate-500 dark:text-slate-400 mb-1" style={{ fontFamily: "'Poppins', system-ui" }}>
@@ -288,56 +329,11 @@ const ImageModal = ({ open, onClose, imageUrl }) => {
                     )}
                   </div>
 
-                  {/* QR code section */}
-                  <p className="text-sm text-slate-600 dark:text-slate-300 font-medium self-start" style={{ fontFamily: "'Poppins', system-ui" }}>Share online:</p>
-                  <div className="flex-shrink-0 w-44 h-44 flex items-center justify-center">
-                    {uploading ? (
-                      <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-700 rounded-lg">
-                        <Loader2 className="w-8 h-8 text-violet-500 animate-spin" />
-                      </div>
-                    ) : uploadError ? (
-                      <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-slate-700 rounded-lg p-4 text-center">
-                        <p className="text-sm text-red-500" style={{ fontFamily: "'Poppins', system-ui" }}>{uploadError}</p>
-                      </div>
-                    ) : (
-                      <div className="p-3 bg-white rounded-lg shadow-sm flex items-center justify-center">
-                        <canvas ref={qrCanvasRef} width="180" height="180" className="w-full h-full max-w-[180px] max-h-[180px]" />
-                      </div>
-                    )}
-                  </div>
-                  {qrUrl && (
-                    <div className="w-full">
-                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-1 font-medium" style={{ fontFamily: "'Poppins', system-ui" }}>Share link:</p>
-                      <div className="flex">
-                        <div className="bg-slate-100 dark:bg-slate-700 p-2 px-3 rounded-l-md flex-grow text-sm truncate">
-                          {qrUrl}
-                        </div>
-                        <button 
-                          onClick={copyToClipboard}
-                          className="bg-violet-500 hover:bg-violet-600 text-white p-2 rounded-r-md flex items-center"
-                        >
-                          {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-                        </button>
-                      </div>
-                      {copied && (
-                        <p className="text-xs text-green-600 dark:text-green-400 mt-1" style={{ fontFamily: "'Poppins', system-ui" }}>
-                          Copied to clipboard!
-                        </p>
-                      )}
-                    </div>
-                  )}
-                  {/* Download and close buttons - Always visible */}
+                  {/* Only close button now */}
                   <div className="flex flex-row gap-2 w-full justify-center mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                     <button
-                      onClick={downloadImage}
-                      className="flex items-center justify-center gap-2 bg-violet-500 hover:bg-violet-600 text-white p-2 px-4 rounded-md font-semibold"
-                      style={{ fontFamily: "'Poppins', system-ui" }}
-                    >
-                      <Download className="w-4 h-4" /> Download
-                    </button>
-                    <button
                       onClick={onClose}
-                      className="flex items-center justify-center gap-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 p-2 px-4 rounded-md font-semibold"
+                      className="flex-1 items-center justify-center gap-2 border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 p-2 px-4 rounded-md font-semibold flex"
                       style={{ fontFamily: "'Poppins', system-ui" }}
                     >
                       Close

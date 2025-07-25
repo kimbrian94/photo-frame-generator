@@ -5,6 +5,10 @@ import io
 import os
 import requests
 from datetime import datetime
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
@@ -19,6 +23,9 @@ SLOTS = [
 # --- Constants for resource directories ---
 FRAME_TEMPLATE_DIR = os.path.join(os.path.dirname(__file__), 'resources', 'frame_templates')
 GENERATED_PHOTO_DIR = os.path.join(os.path.dirname(__file__), 'resources', 'generated_photos')
+
+# --- API credentials ---
+GOFILE_API_TOKEN = os.getenv('GOFILE_API_TOKEN', '')
 
 def convert_to_srgb(img):
     """
@@ -268,32 +275,59 @@ def upload_temp():
     print("Received /upload_temp POST request")
     if 'file' not in request.files:
         print("No file found in request.files")
-        return jsonify({'success': False, 'error': 'No file uploaded'}), 400
+        return jsonify({'success': False, 'message': 'No file uploaded'}), 400
+    
     file = request.files['file']
     print(f"Uploading file: {file.filename}, type: {file.mimetype}")
-    # The key must be 'file', not 'files'
-    files = {'file': (file.filename, file.stream, file.mimetype)}
+    
     try:
-        res = requests.post('https://upload.gofile.io/uploadfile', files=files)
-        print(f"gofile.io response status: {res.status_code}")
-        print(f"gofile.io response text: {res.text}")
+        # Use the direct upload URL instead of getting the best server
+        upload_url = 'https://upload.gofile.io/uploadFile'
+        
+        # Prepare the file data
+        files = {'file': (file.filename, file.read(), file.mimetype)}
+        
+        # Prepare additional data including token if available
+        data = {}
+        if GOFILE_API_TOKEN:
+            data['token'] = GOFILE_API_TOKEN
+            print("Using GoFile API token for authenticated upload")
+        
+        # Upload the file directly
+        print(f"Uploading to {upload_url}")
+        res = requests.post(upload_url, files=files, data=data)
+        print(f"GoFile upload response status: {res.status_code}")
+        
         if res.status_code == 200:
             try:
-                data = res.json()
-                print("Parsed JSON from gofile.io:", data)
-                # The link is in data['data']['downloadPage']
-                if data.get('status') == 'ok' and 'data' in data and 'downloadPage' in data['data']:
-                    return jsonify({'success': True, 'link': data['data']['downloadPage']}), 200
+                upload_data = res.json()
+                print(f"GoFile upload response data: {upload_data}")
+                
+                if upload_data.get('status') == 'ok' and 'data' in upload_data and 'downloadPage' in upload_data['data']:
+                    download_link = upload_data['data']['downloadPage']
+                    content_id = upload_data['data'].get('fileId', 'unknown')
+                    
+                    print(f"File uploaded successfully. Content ID: {content_id}, Download link: {download_link}")
+                    return jsonify({
+                        'success': True, 
+                        'link': download_link,
+                        'fileId': content_id
+                    }), 200
                 else:
-                    return jsonify({'success': False, 'error': data}), 500
+                    error_msg = upload_data.get('message', 'Unknown error from GoFile API')
+                    print(f"Error from GoFile: {error_msg}")
+                    return jsonify({'success': False, 'message': error_msg}), 500
+                    
             except Exception as e:
-                print(f"Failed to parse JSON from gofile.io: {e}")
-                return jsonify({'success': False, 'error': 'gofile.io did not return JSON', 'raw': res.text}), 500
+                print(f"Failed to parse JSON from GoFile response: {e}")
+                return jsonify({'success': False, 'message': 'Failed to parse GoFile response', 'error': str(e)}), 500
         else:
-            return jsonify({'success': False, 'error': res.text}), res.status_code
+            print(f"Error response from GoFile: {res.text}")
+            return jsonify({'success': False, 'message': f'GoFile API error (HTTP {res.status_code})'}), res.status_code
+            
     except Exception as e:
-        print(f"Exception during upload to gofile.io: {e}")
-        return jsonify({'success': False, 'error': str(e)}), 500
+        print(f"Exception during upload to GoFile: {e}")
+        return jsonify({'success': False, 'message': 'Upload failed', 'error': str(e)}), 500
 
 @app.route('/get_templates', methods=['GET'])
 def get_templates():

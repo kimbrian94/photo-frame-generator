@@ -34,7 +34,7 @@ const ImageModal = ({ open, onClose, imageUrl }) => {
         // Convert blob URL to File
         const response = await fetch(imageUrl);
         const blob = await response.blob();
-        const file = new File([blob], "photo-frame.png", { type: blob.type });
+        const file = new File([blob], "link-up-night.png", { type: blob.type });
         
         const formData = new FormData();
         formData.append("file", file);
@@ -54,6 +54,12 @@ const ImageModal = ({ open, onClose, imageUrl }) => {
         
         if (data.success && data.link) {
           setQrUrl(data.link);
+          // Store the file ID if provided, could be useful for future operations like deletion
+          if (data.fileId) {
+            console.log("File uploaded with ID:", data.fileId);
+            // You could add this to component state if needed
+            // setFileId(data.fileId);
+          }
         } else {
           throw new Error(data.message || "Upload failed");
         }

@@ -47,3 +47,5 @@ backend/resources/generated_photos/*.png
 
 # Ignore test images
 /test-images/
+
+*.zip
